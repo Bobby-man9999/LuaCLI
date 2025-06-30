@@ -1,0 +1,2 @@
+function CMD(args)
+end
