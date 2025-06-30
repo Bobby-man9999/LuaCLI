@@ -1,16 +1,23 @@
 -- LuaCLI Home Page Script
 while true do
     print("=== LuaCLI Home ===")
-    print("Type 'install' to install or update LuaCLI.")
-    print("Type 'run' to run an existing LuaCLI installation.")
+    print("Type 'install' to install or update an instance of LuaCLI.")
+    print("Type 'copy' to duplicate an instance of LuaCLI.")
+    print("Type 'delete' to delete an instance of LuaCLI.")
+    print("Type 'run' to run an existing instance of LuaCLI installation.")
     print("Type 'exit' to quit.")
-    io.write("> ")
+    print("Type 'update' to update the LuaCLI hub.")
+    io.write("$> ")
     local cmd = io.read()
+
+    -- Get script directory for all operations
+    local this_path = debug.getinfo(1, "S").source:sub(2)
+    local script_dir = this_path:match("^(.*)[/\\][^/\\]-$") or "."
 
     if cmd == "install" then
         -- Download versions.txt
         local versions_url = "https://raw.githubusercontent.com/Bobby-man9999/luacli/main/versions.txt"
-        local versions_csv = "versions.txt"
+        local versions_csv = script_dir .. "/versions.txt"
         local versions_cmd = 'powershell -Command "Invoke-WebRequest -Uri \'"' .. versions_url .. "\' -OutFile \'" .. versions_csv .. "\'"
         local versions_result = os.execute(versions_cmd)
 
@@ -19,6 +26,8 @@ while true do
             for line in io.lines(versions_csv) do
                 print(line)
             end
+            -- Delete versions.txt after use
+            os.remove(versions_csv)
         else
             print("Could not fetch available versions.")
         end
@@ -32,12 +41,12 @@ while true do
         if name == nil or name == "" then
             name = version
         end
-        local outdir = "LuaCLI_" .. name
-        local zipfile = "luacli_" .. version .. ".zip"
+        local outdir = script_dir .. "/LuaCLI_" .. name
+        local zipfile = script_dir .. "/luacli_" .. version .. ".zip"
         local url = "https://raw.githubusercontent.com/Bobby-man9999/luacli/main/LuaCLI_" .. version .. ".zip"
 
         -- Download the zip file using PowerShell (Windows)
-        local download_cmd = 'powershell -Command "Invoke-WebRequest -Uri \'"' .. url .. '"\' -OutFile \'"' .. zipfile .. "\'"
+        local download_cmd = 'powershell -Command "Invoke-WebRequest -Uri \'"' .. url .. "\' -OutFile \'" .. zipfile .. "\'"
         local download_result = os.execute(download_cmd)
 
         if download_result ~= 0 and download_result ~= true then
@@ -45,7 +54,7 @@ while true do
         else
             if mode == "u" then
                 -- Update mode: extract to temp, copy all except commands
-                local tempdir = "temp_update"
+                local tempdir = script_dir .. "/temp_update"
                 os.execute('if not exist "' .. tempdir .. '" mkdir "' .. tempdir .. '"')
                 local unzip_result = os.execute('tar -xf "' .. zipfile .. '" -C "' .. tempdir .. '"')
                 if unzip_result == 0 or unzip_result == true then
@@ -78,12 +87,14 @@ while true do
                     print("Unzip failed!")
                 end
             end
+            -- Delete zip file after use
+            os.remove(zipfile)
         end
     elseif cmd == "run" then
-        -- List all LuaCLI installations
+        -- List all LuaCLI installations in script_dir
         print("Available installations:")
         local installations = {}
-        local p = io.popen('dir /B /AD')
+        local p = io.popen('dir /B /AD "' .. script_dir .. '"')
         for folder in p:lines() do
             if folder:match("^LuaCLI_.*") then
                 table.insert(installations, folder)
@@ -101,9 +112,85 @@ while true do
                 print("Invalid selection.")
             else
                 -- Run the main.lua in the chosen installation
-                local main_path = chosen .. "\\LuaCLI\\main.lua"
+                local main_path = script_dir .. "/" .. chosen .. "/LuaCLI/main.lua"
                 print("Launching: lua " .. main_path)
                 os.execute('lua "' .. main_path .. '"')
+            end
+        end
+    elseif cmd == "delete" then
+        -- List all LuaCLI installations in script_dir
+        print("Available installations:")
+        local installations = {}
+        local p = io.popen('dir /B /AD "' .. script_dir .. '"')
+        for folder in p:lines() do
+            if folder:match("^LuaCLI_.*") then
+                table.insert(installations, folder)
+                print("[" .. #installations .. "] " .. folder)
+            end
+        end
+        p:close()
+        if #installations == 0 then
+            print("No installations found.")
+        else
+            io.write("Select installation number to delete: ")
+            local sel = tonumber(io.read())
+            local chosen = installations[sel]
+            if not chosen then
+                print("Invalid selection.")
+            else
+                io.write("Are you sure you want to delete '" .. chosen .. "'? (y/n): ")
+                local confirm = io.read()
+                if confirm == "y" or confirm == "Y" then
+                    local del_cmd = 'rmdir /S /Q "' .. script_dir .. '/' .. chosen .. '"'
+                    local result = os.execute(del_cmd)
+                    if result == 0 or result == true then
+                        print("Deleted '" .. chosen .. "'.")
+                    else
+                        print("Failed to delete '" .. chosen .. "'.")
+                    end
+                else
+                    print("Delete cancelled.")
+                end
+            end
+        end
+    elseif cmd == "copy" then
+        -- List all LuaCLI installations in script_dir
+        print("Available installations:")
+        local installations = {}
+        local p = io.popen('dir /B /AD "' .. script_dir .. '"')
+        for folder in p:lines() do
+            if folder:match("^LuaCLI_.*") then
+                table.insert(installations, folder)
+                print("[" .. #installations .. "] " .. folder)
+            end
+        end
+        p:close()
+        if #installations == 0 then
+            print("No installations found.")
+        else
+            io.write("Select installation number to copy: ")
+            local sel = tonumber(io.read())
+            local chosen = installations[sel]
+            if not chosen then
+                print("Invalid selection.")
+            else
+                io.write("Enter new installation name: ")
+                local newname = io.read()
+                if not newname or newname == "" then
+                    print("No name entered. Copy cancelled.")
+                else
+                    local dest = script_dir .. "\\LuaCLI_" .. newname
+                    local src = script_dir .. "\\" .. chosen
+                    -- Remove destination if it exists
+                    os.execute('if exist "' .. dest .. '" rmdir /S /Q "' .. dest .. '"')
+                    local copy_cmd = 'xcopy /E /I /Y "' .. src .. '\\*" "' .. dest .. '\\"'
+                    local result = os.execute(copy_cmd)
+                    if result == 0 or result == true then
+                        print("Copied '" .. chosen .. "' to 'LuaCLI_" .. newname .. "'.")
+                    else
+                        print("Failed to copy installation.")
+                    end
+                end
             end
         end
     elseif cmd == "exit" then
