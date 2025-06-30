@@ -11,7 +11,7 @@ while true do
         -- Download versions.txt
         local versions_url = "https://raw.githubusercontent.com/Bobby-man9999/luacli/main/versions.txt"
         local versions_csv = "versions.txt"
-        local versions_cmd = 'powershell -Command "Invoke-WebRequest -Uri \'" .. versions_url .. "\' -OutFile \'" .. versions_csv .. "\'"'
+        local versions_cmd = 'powershell -Command "Invoke-WebRequest -Uri \'"' .. versions_url .. "\' -OutFile \'" .. versions_csv .. "\'"
         local versions_result = os.execute(versions_cmd)
 
         if versions_result == 0 or versions_result == true then
