@@ -1,6 +1,0 @@
-file = io.open(base_dir .. "sys/startup/test.lua", "w")
-strt = io.open(base_dir .. "sys/startup/startup.csv", "a")
-file:write("print('Test startup script')\n")
-strt:write(",test.lua")
-file:close()
-strt:close()

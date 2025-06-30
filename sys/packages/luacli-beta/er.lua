@@ -1,2 +1,0 @@
-function CMD(args)
-end

@@ -1,2 +1,0 @@
-Welcome to LuaCLI!
-Don't forget to stay hydrated and take breaks.
