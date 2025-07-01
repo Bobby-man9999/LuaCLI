@@ -9,18 +9,26 @@ while true do
     print("Type 'update' to update the LuaCLI hub.")
     io.write("$> ")
     local cmd = io.read()
-
+    local function show_loading()
+        io.write("loading...")
+    end
+    local function clear_loading()
+        io.write("\r           \r")
+    end
     -- Get script directory for all operations
     local this_path = debug.getinfo(1, "S").source:sub(2)
     local script_dir = this_path:match("^(.*)[/\\][^/\\]-$") or "."
 
+    show_loading()
+
     if cmd == "install" then
+        
         -- Download versions.txt
         local versions_url = "https://raw.githubusercontent.com/Bobby-man9999/luacli/main/versions.txt"
         local versions_csv = script_dir .. "/versions.txt"
         local versions_cmd = 'powershell -Command "Invoke-WebRequest -Uri \'"' .. versions_url .. "\' -OutFile \'" .. versions_csv .. "\'"
         local versions_result = os.execute(versions_cmd)
-
+        clear_loading()
         if versions_result == 0 or versions_result == true then
             print("Available versions:")
             for line in io.lines(versions_csv) do
@@ -78,6 +86,7 @@ while true do
                     print("Unzip to temp failed!")
                 end
             else
+                
                 -- New install: normal unzip
                 os.execute('if not exist "' .. outdir .. '" mkdir "' .. outdir .. '"')
                 local result = os.execute('tar -xf "' .. zipfile .. '" -C "' .. outdir .. '"')
@@ -91,6 +100,7 @@ while true do
             os.remove(zipfile)
         end
     elseif cmd == "run" then
+        clear_loading()
         -- List all LuaCLI installations in script_dir
         print("Available installations:")
         local installations = {}
@@ -118,6 +128,7 @@ while true do
             end
         end
     elseif cmd == "delete" then
+        clear_loading()
         -- List all LuaCLI installations in script_dir
         print("Available installations:")
         local installations = {}
@@ -154,6 +165,7 @@ while true do
             end
         end
     elseif cmd == "copy" then
+        clear_loading()
         -- List all LuaCLI installations in script_dir
         print("Available installations:")
         local installations = {}
@@ -194,6 +206,7 @@ while true do
             end
         end
     elseif cmd == "exit" then
+        clear_loading()
         print("Goodbye!")
         break
     else
